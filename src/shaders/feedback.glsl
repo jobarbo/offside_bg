@@ -14,7 +14,7 @@ void main() {
     current.rgb *= 1.0; // Make current frame much brighter
 
     // Create feedback effect with boosted current frame
-    vec4 color = mix(current, previous, uFeedbackAmount);
+    vec4 color = mix(current, previous, 0.0);
 
     // More aggressive boost for moving parts
     if (length(current.rgb) > 0.1) {

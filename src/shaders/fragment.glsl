@@ -14,13 +14,15 @@ void main() {
     // Sample texture with animated UVs
     vec4 texColor = texture2D(uTexture, uv);
 
-    // Add some normal-based coloring with moderate intensity
+    // Add some normal-based coloring with increased intensity
     vec3 normalColor = vNormal * 0.5 + 0.5;
-    normalColor *= 0.8; // Reduce the brightness
 
-    // Mix texture with normal color (more weight to texture)
-    vec4 finalColor = mix(texColor, vec4(normalColor, 1.0), 0.3);
-    finalColor.a = 1.0; // Fully opaque
+    // Mix texture with normal color
+    vec4 finalColor = mix(texColor, vec4(normalColor, 1.0), 0.5);
+
+    // Ensure full opacity and boost brightness
+    finalColor.rgb *= 2.0; // Boost brightness
+    finalColor.a = 1.0;   // Force full opacity
 
     gl_FragColor = finalColor;
 }

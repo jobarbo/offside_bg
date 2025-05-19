@@ -63,7 +63,7 @@ const textureLoader = new THREE.TextureLoader();
 const texture = textureLoader.load("texture.png");
 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
-// Create custom shader material
+// Create custom shader material for cubes
 const cubeMaterial = new THREE.ShaderMaterial({
 	vertexShader,
 	fragmentShader,
@@ -72,9 +72,10 @@ const cubeMaterial = new THREE.ShaderMaterial({
 		uTexture: {value: texture},
 		uTime: {value: 0},
 	},
-	side: THREE.DoubleSide,
-	depthWrite: true, // Enable depth writing for solid objects
-	blending: THREE.AdditiveBlending, // Changed to additive blending for more visibility
+	side: THREE.FrontSide,
+	depthWrite: true,
+	depthTest: true,
+	blending: THREE.NoBlending,
 });
 
 // Create cubes
@@ -84,6 +85,7 @@ const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
 // Noise settings
 const noiseScale = 1.5;
 const timeScale = 0.02;
+const pathEvolutionScale = 0.01; // Speed at which paths evolve
 let time = 0;
 
 // Create multiple cube instances
@@ -181,7 +183,7 @@ const feedbackMaterial = new THREE.ShaderMaterial({
 	uniforms: {
 		tCurrent: {value: null},
 		tPrevious: {value: null},
-		uFeedbackAmount: {value: 0.85}, // Reduced feedback amount to make current frame more visible
+		uFeedbackAmount: {value: 0.85},
 	},
 	vertexShader: `
 		varying vec2 vUv;
@@ -191,6 +193,9 @@ const feedbackMaterial = new THREE.ShaderMaterial({
 		}
 	`,
 	fragmentShader: feedbackShader,
+	transparent: false,
+	depthTest: false,
+	depthWrite: false,
 });
 
 // Create post-processing scene
@@ -211,17 +216,25 @@ function animate() {
 		const offset = cube.userData.offset;
 		const originalPos = cube.userData.originalPosition;
 
-		const noiseX = noise(time * timeScale + offset, 0, 0) * noiseScale;
-		const noiseY = noise(0, time * timeScale + offset, 0) * noiseScale;
-		const noiseZ = noise(0, 0, time * timeScale + offset) * noiseScale;
+		// Add slow evolution to the base position
+		const evolutionX = noise(time * pathEvolutionScale, offset, 0) * 5;
+		const evolutionY = noise(offset, time * pathEvolutionScale, 0) * 5;
+		const evolutionZ = noise(0, offset, time * pathEvolutionScale) * 5;
 
-		cube.position.x = originalPos.x + noiseX * 1;
-		cube.position.y = originalPos.y + noiseY * 1;
-		cube.position.z = originalPos.z + noiseZ * 15;
+		// Generate primary movement noise
+		const noiseX = noise(time * timeScale + offset, evolutionY, evolutionZ) * noiseScale;
+		const noiseY = noise(evolutionX, time * timeScale + offset, evolutionZ) * noiseScale;
+		const noiseZ = noise(evolutionX, evolutionY, time * timeScale + offset) * noiseScale;
 
-		cube.rotation.x = noiseX * Math.PI + 0.001;
-		cube.rotation.y = noiseY * Math.PI + 0.001;
-		cube.rotation.z = noiseZ * Math.PI + 0.001;
+		// Apply both evolution and noise to position
+		cube.position.x = originalPos.x + noiseX * 1 + evolutionX;
+		cube.position.y = originalPos.y + noiseY * 1 + evolutionY;
+		cube.position.z = originalPos.z + noiseZ * 15 + evolutionZ;
+
+		// Add evolution to rotation as well
+		cube.rotation.x = noiseX * Math.PI + time * pathEvolutionScale * 0.1;
+		cube.rotation.y = noiseY * Math.PI + time * pathEvolutionScale * 0.1;
+		cube.rotation.z = noiseZ * Math.PI + time * pathEvolutionScale * 0.1;
 	});
 
 	// Render current frame to buffer A
