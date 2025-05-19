@@ -20,9 +20,9 @@ void main() {
     // Mix texture with normal color
     vec4 finalColor = mix(texColor, vec4(normalColor, 1.0), 0.5);
 
-    // Ensure full opacity and boost brightness
-    finalColor.rgb *= 2.0; // Boost brightness
-    finalColor.a = 1.0;   // Force full opacity
+    // Boost brightness and ensure full opacity
+    finalColor.rgb *= 1.5;
+    finalColor.a = 1.0;
 
     gl_FragColor = finalColor;
 }
