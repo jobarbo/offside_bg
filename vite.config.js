@@ -4,8 +4,15 @@ export default {
 	assetsInclude: ["**/*.glsl"],
 	build: {
 		rollupOptions: {
-			external: ["**/*.glsl"],
+			output: {
+				manualChunks: {
+					three: ["three"],
+				},
+			},
 		},
 	},
 	plugins: [glsl()],
+	resolve: {
+		dedupe: ["three"],
+	},
 };
