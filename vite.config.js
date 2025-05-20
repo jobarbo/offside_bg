@@ -1,7 +1,7 @@
 import glsl from "vite-plugin-glsl";
 
 export default {
-	assetsInclude: ["**/*.glsl"],
+	assetsInclude: ["**/*.glsl", "**/*.png", "**/*.jpg", "**/*.jpeg"],
 	build: {
 		rollupOptions: {
 			output: {
