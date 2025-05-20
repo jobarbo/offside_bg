@@ -10,6 +10,7 @@ import blurVertexShader from "./shaders/blurVertex.glsl?raw";
 import horizontalBlurShader from "./shaders/horizontalBlur.glsl?raw";
 import verticalBlurShader from "./shaders/verticalBlur.glsl?raw";
 import monochromeShader from "./shaders/monochrome.glsl?raw";
+import animatedTextureShader from "./shaders/animatedTexture.glsl?raw";
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -39,7 +40,7 @@ composer.addPass(renderPass);
 const horizontalBlurPass = new ShaderPass({
 	uniforms: {
 		tDiffuse: {value: null},
-		h: {value: 3.0 / window.innerWidth},
+		h: {value: 1.0 / window.innerWidth},
 	},
 	vertexShader: blurVertexShader,
 	fragmentShader: horizontalBlurShader,
@@ -50,7 +51,7 @@ composer.addPass(horizontalBlurPass);
 const verticalBlurPass = new ShaderPass({
 	uniforms: {
 		tDiffuse: {value: null},
-		v: {value: 3.0 / window.innerHeight},
+		v: {value: 1.0 / window.innerHeight},
 	},
 	vertexShader: blurVertexShader,
 	fragmentShader: verticalBlurShader,
@@ -70,9 +71,10 @@ texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 const cubeMaterial = new THREE.ShaderMaterial({
 	uniforms: {
 		map: {value: texture},
+		time: {value: 0.1},
 	},
-	vertexShader: blurVertexShader, // We can reuse this as it just passes UVs
-	fragmentShader: monochromeShader,
+	vertexShader: blurVertexShader,
+	fragmentShader: animatedTextureShader,
 	transparent: false,
 	depthWrite: true,
 	depthTest: true,
@@ -96,11 +98,11 @@ for (let i = 0; i < 122; i++) {
 	const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
 	// Set initial positions in a circular pattern
-	const angle = (i / 22) * Math.PI * 2;
-	const radius = orbitRadius + (Math.random() - 0.5);
-	cube.position.x = Math.cos(angle) * radius;
-	cube.position.y = Math.sin(angle) * radius;
-	cube.position.z = (Math.random() - 0.5) * 12;
+	const angle = (i / 122) * Math.PI * 2;
+	const radius = orbitRadius + (Math.random() - 0.5) * 0.1;
+	cube.position.x = (Math.random() - 0.5) * 1;
+	cube.position.y = (Math.random() - 0.5) * 1;
+	cube.position.z = (Math.random() - 0.5) * 2;
 
 	// Store original angle for orbital motion
 	cube.userData.originalAngle = angle;
@@ -113,7 +115,7 @@ for (let i = 0; i < 122; i++) {
 }
 
 // Position camera
-camera.position.z = 13;
+camera.position.z = 12;
 camera.position.x = 0;
 camera.position.y = 0;
 
@@ -122,13 +124,16 @@ function noise(x, y, z) {
 	const nx = Math.cos(x);
 	const ny = Math.sin(y);
 	const nz = Math.cos(z);
-	return Math.cos(nx + ny + nz) * 0.15;
+	return Math.cos(nx + ny + nz) * 0.1;
 }
 
 // Animation loop
 function animate() {
 	requestAnimationFrame(animate);
 	time += 1.0;
+
+	// Update shader time uniform
+	cubeMaterial.uniforms.time.value = time * 0.01;
 
 	// Calculate shared rotation for all cubes
 	const sharedNoiseX = noise(time * timeScale, 0, 0) * noiseScale;
