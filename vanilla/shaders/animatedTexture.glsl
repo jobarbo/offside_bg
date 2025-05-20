@@ -7,11 +7,11 @@ void main() {
     vec2 animatedUv = vUv;
 
     // Add wave-like distortion
-    animatedUv.x += tan(vUv.y * 12.0 + time * 2.0) * 0.02;
-    animatedUv.y += tan(vUv.x * 12.0 + time * 2.0) * 0.02;
+    animatedUv.x += sin(vUv.y * 12.0 + time * 2.0) * 0.02;
+    animatedUv.y += cos(vUv.x * 12.0 + time * 2.0) * 0.02;
 
     // Add rotating motion
-    float angle = time * 0.5;
+    float angle = time * 0.05;
     vec2 center = vec2(0.5, 0.5);
     vec2 uv = animatedUv - center;
     vec2 rotatedUv = vec2(
