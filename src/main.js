@@ -1,9 +1,9 @@
-import * as THREE from "three";
-import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer";
-import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
-import {ShaderPass} from "three/examples/jsm/postprocessing/ShaderPass";
-import {AfterimagePass} from "three/examples/jsm/postprocessing/AfterimagePass";
-import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import * as THREE from "../node_modules/three/build/three.module.js";
+import {EffectComposer} from "../node_modules/three/examples/jsm/postprocessing/EffectComposer.js";
+import {RenderPass} from "../node_modules/three/examples/jsm/postprocessing/RenderPass.js";
+import {ShaderPass} from "../node_modules/three/examples/jsm/postprocessing/ShaderPass.js";
+import {AfterimagePass} from "../node_modules/three/examples/jsm/postprocessing/AfterimagePass.js";
+import {UnrealBloomPass} from "../node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import vertexShader from "./shaders/vertex.glsl?raw";
 import fragmentShader from "./shaders/fragment.glsl?raw";
 import blurVertexShader from "./shaders/blurVertex.glsl?raw";
