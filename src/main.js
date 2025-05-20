@@ -87,7 +87,7 @@ const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
 // Noise settings
 const noiseScale = 0.5;
 const timeScale = 0.001;
-const orbitRadius = 2.0;
+const orbitRadius = 1.4;
 const orbitSpeed = 0.0015;
 const independentMotionScale = 2.0; // Scale of independent motion
 const centeringForce = 0.7; // How strongly cubes are pulled to their orbital paths
