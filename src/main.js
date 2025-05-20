@@ -64,7 +64,7 @@ composer.addPass(afterImagePass);
 
 // Load texture
 const textureLoader = new THREE.TextureLoader();
-const texture = textureLoader.load("texture2.png");
+const texture = textureLoader.load("texture.png");
 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
 // Create custom shader material for cubes
