@@ -7,11 +7,11 @@ void main() {
     vec2 animatedUv = vUv;
 
     // Add wave-like distortion
-    animatedUv.x += sin(vUv.y * 10.0 + time * 2.0) * 0.02;
-    animatedUv.y += cos(vUv.x * 10.0 + time * 2.0) * 0.02;
+    animatedUv.x += sin(vUv.y * 12.0 + time * 2.0) * 0.02;
+    animatedUv.y += cos(vUv.x * 12.0 + time * 2.0) * 0.02;
 
     // Add rotating motion
-    float angle = time * 0.5;
+    float angle = time * 0.05;
     vec2 center = vec2(0.5, 0.5);
     vec2 uv = animatedUv - center;
     vec2 rotatedUv = vec2(
@@ -24,12 +24,11 @@ void main() {
     vec4 texel = texture2D(map, rotatedUv);
 
     // Convert to monochrome using standard luminance conversion
-    float luminance = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+    float luminance = dot(texel.rgb, vec3(0.299, 0.587, 0.514));
     texel.rgb = vec3(luminance);
 
     // Add pulsing effect
-    float pulse = sin(time * 3.0) * 0.1 + 0.9;
-    texel.rgb *= pulse;
+
 
     gl_FragColor = texel;
 }

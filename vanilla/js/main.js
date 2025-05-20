@@ -99,22 +99,22 @@ async function init() {
 	// Noise settings
 	const noiseScale = 0.5;
 	const timeScale = 0.001;
-	const orbitRadius = 1.4;
+	const orbitRadius = 0.9;
 	const orbitSpeed = 0.0015;
 	const independentMotionScale = 2.0; // Scale of independent motion
 	const centeringForce = 0.7; // How strongly cubes are pulled to their orbital paths
 	let time = 0;
 
 	// Create multiple cube instances
-	for (let i = 0; i < 122; i++) {
+	for (let i = 0; i < 40; i++) {
 		const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
 		// Set initial positions in a circular pattern
-		const angle = (i / 122) * Math.PI * 2;
+		const angle = (i / 40) * Math.PI * 2;
 		const radius = orbitRadius + (Math.random() - 0.5) * 0.1;
 		cube.position.x = (Math.random() - 0.5) * 1;
 		cube.position.y = (Math.random() - 0.5) * 1;
-		cube.position.z = (Math.random() - 0.5) * 2;
+		cube.position.z = (Math.random() - 0.5) * 1;
 
 		// Store original angle for orbital motion
 		cube.userData.originalAngle = angle;
@@ -173,8 +173,8 @@ async function init() {
 			const independentZ = noise(offset, time * timeScale, cube.userData.verticalOffset) * 111.5;
 
 			// Blend between orbital position and independent motion
-			cube.position.x = baseX * centeringForce + independentX;
-			cube.position.y = baseY * centeringForce + independentY;
+			cube.position.x = baseX + independentX;
+			cube.position.y = baseY + independentY;
 			cube.position.z = independentZ;
 
 			// Apply shared rotation to all cubes
