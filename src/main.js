@@ -1,16 +1,6 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
-import {EffectComposer} from "../node_modules/three/examples/jsm/postprocessing/EffectComposer.js";
-import {RenderPass} from "../node_modules/three/examples/jsm/postprocessing/RenderPass.js";
-import {ShaderPass} from "../node_modules/three/examples/jsm/postprocessing/ShaderPass.js";
-import {AfterimagePass} from "../node_modules/three/examples/jsm/postprocessing/AfterimagePass.js";
-import {UnrealBloomPass} from "../node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import vertexShader from "./shaders/vertex.glsl?raw";
-import fragmentShader from "./shaders/fragment.glsl?raw";
-import blurVertexShader from "./shaders/blurVertex.glsl?raw";
-import horizontalBlurShader from "./shaders/horizontalBlur.glsl?raw";
-import verticalBlurShader from "./shaders/verticalBlur.glsl?raw";
-import monochromeShader from "./shaders/monochrome.glsl?raw";
 import animatedTextureShader from "./shaders/animatedTexture.glsl?raw";
+import blurVertexShader from "./shaders/blurVertex.glsl?raw";
 import textureUrl from "../texture2.png";
 
 // Scene setup
@@ -22,46 +12,151 @@ const renderer = new THREE.WebGLRenderer({
 	precision: "highp",
 });
 
-renderer.setClearColor(0x000000, 0); // Set clear color with 0 alpha for full transparency
-
-// Critical: Don't clear the renderer automatically
-renderer.autoClear = false;
-
-// Handle pixel density
+renderer.setClearColor(0x000000, 0); // Set clear color with 0 alpha for transparency
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Setup EffectComposer
-const composer = new EffectComposer(renderer);
-const renderPass = new RenderPass(scene, camera);
-composer.addPass(renderPass);
+// Create render targets for ping-pong effect
+let renderTarget0 = new THREE.WebGLRenderTarget(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
+let renderTarget1 = renderTarget0.clone();
 
-// Add horizontal blur pass
-const horizontalBlurPass = new ShaderPass({
+// Create persistence shader for trails
+const baseVertexShader = `
+varying vec2 v_uv;
+void main () {
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  v_uv = uv;
+}
+`;
+
+const persistenceFragmentShader = `
+uniform sampler2D sampler;
+uniform float time;
+uniform float aspect;
+uniform vec2 mousePos;
+uniform float noiseFactor;
+uniform float noiseScale;
+uniform float rgbPersistFactor;
+uniform float alphaPersistFactor;
+
+varying vec2 v_uv;
+
+// Simplex noise function
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+float snoise3(vec3 v) {
+  const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+
+  // First corner
+  vec3 i  = floor(v + dot(v, C.yyy));
+  vec3 x0 = v - i + dot(i, C.xxx);
+
+  // Other corners
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy);
+  vec3 i2 = max(g.xyz, l.zxy);
+
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+
+  // Permutations
+  i = mod289(i);
+  vec4 p = permute(permute(permute(
+    i.z + vec4(0.0, i1.z, i2.z, 1.0))
+    + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+    + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+
+  // Gradients: 7x7 points over a square, mapped onto an octahedron.
+  float n_ = 0.142857142857; // 1.0/7.0
+  vec3 ns = n_ * D.wyz - D.xzx;
+
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_);
+
+  vec4 x = x_ *ns.x + ns.yyyy;
+  vec4 y = y_ *ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+
+  vec4 b0 = vec4(x.xy, y.xy);
+  vec4 b1 = vec4(x.zw, y.zw);
+
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+
+  vec3 p0 = vec3(a0.xy,h.x);
+  vec3 p1 = vec3(a0.zw,h.y);
+  vec3 p2 = vec3(a1.xy,h.z);
+  vec3 p3 = vec3(a1.zw,h.w);
+
+  // Normalise gradients
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  p0 *= norm.x;
+  p1 *= norm.y;
+  p2 *= norm.z;
+  p3 *= norm.w;
+
+  // Mix final noise value
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+}
+
+void main() {
+  float a = snoise3(vec3(v_uv * noiseFactor, time * 0.1)) * noiseScale;
+  float b = snoise3(vec3(v_uv * noiseFactor, time * 0.1 + 100.0)) * noiseScale;
+  vec4 t0 = texture2D(sampler, v_uv + vec2(a, b) + mousePos * 0.005);
+
+  gl_FragColor = vec4(t0.xyz * rgbPersistFactor, alphaPersistFactor);
+}
+`;
+
+// Create a scene for the persistence effect
+const persistenceScene = new THREE.Scene();
+const orthoCamera = new THREE.OrthographicCamera(-window.innerWidth / 2, window.innerWidth / 2, window.innerHeight / 2, -window.innerHeight / 2, 0.1, 10);
+orthoCamera.position.set(0, 0, 1);
+orthoCamera.lookAt(new THREE.Vector3(0, 0, 0));
+
+// Create a full-screen quad for the persistence effect
+const fullscreenQuadGeometry = new THREE.PlaneGeometry(window.innerWidth, window.innerHeight);
+const fullscreenQuadMaterial = new THREE.ShaderMaterial({
 	uniforms: {
-		tDiffuse: {value: null},
-		h: {value: 1.0 / window.innerWidth},
+		sampler: {value: null},
+		time: {value: 0},
+		aspect: {value: window.innerWidth / window.innerHeight},
+		mousePos: {value: new THREE.Vector2(0, 0)},
+		noiseFactor: {value: 3.0}, // Controls noise frequency
+		noiseScale: {value: 0.0062}, // Controls noise amplitude
+		rgbPersistFactor: {value: 0.999}, // Controls color persistence (higher = longer trails)
+		alphaPersistFactor: {value: 0.999}, // Controls opacity persistence
 	},
-	vertexShader: blurVertexShader,
-	fragmentShader: horizontalBlurShader,
+	vertexShader: baseVertexShader,
+	fragmentShader: persistenceFragmentShader,
+	transparent: true,
 });
-composer.addPass(horizontalBlurPass);
+const fullscreenQuad = new THREE.Mesh(fullscreenQuadGeometry, fullscreenQuadMaterial);
+persistenceScene.add(fullscreenQuad);
 
-// Add vertical blur pass
-const verticalBlurPass = new ShaderPass({
-	uniforms: {
-		tDiffuse: {value: null},
-		v: {value: 1.0 / window.innerHeight},
-	},
-	vertexShader: blurVertexShader,
-	fragmentShader: verticalBlurShader,
+// Mouse position tracking
+const mousePos = [0, 0];
+const targetMousePos = [0, 0];
+document.addEventListener("mousemove", (e) => {
+	// Normalize to -1 to 1
+	targetMousePos[0] = (e.clientX / window.innerWidth) * 2 - 1;
+	targetMousePos[1] = -(e.clientY / window.innerHeight) * 2 + 1;
 });
-composer.addPass(verticalBlurPass);
-
-// Add AfterImagePass with strong effect
-const afterImagePass = new AfterimagePass(0.998); // Higher value = longer trails
-composer.addPass(afterImagePass);
 
 // Load texture
 const textureLoader = new THREE.TextureLoader();
@@ -83,7 +178,7 @@ const cubeMaterial = new THREE.ShaderMaterial({
 
 // Create cubes
 const cubes = [];
-const cubeGeometry = new THREE.BoxGeometry(0.51, 1, 1);
+const cubeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
 
 // Noise settings
 const noiseScale = 0.5;
@@ -133,8 +228,15 @@ function animate() {
 	requestAnimationFrame(animate);
 	time += 1.0;
 
-	// Update shader time uniform
+	// Update shader time uniforms
 	cubeMaterial.uniforms.time.value = time * 0.01;
+	fullscreenQuadMaterial.uniforms.time.value = time * 0.01;
+
+	// Update mouse position with smooth interpolation
+	const mouseSpeed = 0.05;
+	mousePos[0] += (targetMousePos[0] - mousePos[0]) * mouseSpeed;
+	mousePos[1] += (targetMousePos[1] - mousePos[1]) * mouseSpeed;
+	fullscreenQuadMaterial.uniforms.mousePos.value.set(mousePos[0], mousePos[1]);
 
 	// Calculate shared rotation for all cubes
 	const sharedNoiseX = noise(time * timeScale, 0, 0) * noiseScale;
@@ -172,8 +274,48 @@ function animate() {
 		cube.rotation.z = sharedRotationZ + noise(0, offset, time * timeScale) * Math.PI;
 	});
 
-	// Render with composer
-	composer.render();
+	// ======= TRAIL EFFECT RENDERING (FOLLOWING DEMO2 APPROACH) =======
+
+	// 1. Set the input texture to the fullscreen quad material
+	fullscreenQuadMaterial.uniforms.sampler.value = renderTarget1.texture;
+
+	// 2. Disable auto-clear to accumulate renders
+	renderer.autoClearColor = false;
+
+	// 3. Render to renderTarget0
+	renderer.setRenderTarget(renderTarget0);
+	renderer.clear(); // Clear once at the beginning
+
+	// 4. Render the persistence effect (this will create the trails using the previous frame)
+	renderer.render(persistenceScene, orthoCamera);
+
+	// 5. Render the scene with cubes on top of the trails
+	renderer.render(scene, camera);
+
+	// 6. Render the result to the screen
+	renderer.setRenderTarget(null);
+	renderer.clear();
+
+	// 7. Use renderTarget0 (which now has both the trails and the current frame)
+	fullscreenQuadMaterial.uniforms.sampler.value = renderTarget0.texture;
+
+	// 8. Set 1.0 to display the texture as-is without fading
+	const originalRgb = fullscreenQuadMaterial.uniforms.rgbPersistFactor.value;
+	const originalAlpha = fullscreenQuadMaterial.uniforms.alphaPersistFactor.value;
+	fullscreenQuadMaterial.uniforms.rgbPersistFactor.value = 1.0;
+	fullscreenQuadMaterial.uniforms.alphaPersistFactor.value = 1.0;
+
+	// 9. Render to screen
+	renderer.render(persistenceScene, orthoCamera);
+
+	// 10. Restore original values
+	fullscreenQuadMaterial.uniforms.rgbPersistFactor.value = originalRgb;
+	fullscreenQuadMaterial.uniforms.alphaPersistFactor.value = originalAlpha;
+
+	// 11. Swap render targets for the next frame
+	const temp = renderTarget0;
+	renderTarget0 = renderTarget1;
+	renderTarget1 = temp;
 }
 
 // Handle window resize
@@ -188,22 +330,29 @@ window.addEventListener("resize", () => {
 	renderer.setSize(width, height);
 	renderer.setPixelRatio(pixelRatio);
 
-	// Update composer size
-	composer.setSize(width, height);
+	// Update orthographic camera
+	orthoCamera.left = -width / 2;
+	orthoCamera.right = width / 2;
+	orthoCamera.top = height / 2;
+	orthoCamera.bottom = -height / 2;
+	orthoCamera.updateProjectionMatrix();
 
-	// Update blur uniforms
-	horizontalBlurPass.uniforms.h.value = 1.0 / width;
-	verticalBlurPass.uniforms.v.value = 1.0 / height;
+	// Update fullscreen quad
+	fullscreenQuad.geometry.dispose();
+	fullscreenQuad.geometry = new THREE.PlaneGeometry(width, height);
+
+	// Update aspect ratio
+	fullscreenQuadMaterial.uniforms.aspect.value = width / height;
+
+	// Update render targets
+	renderTarget0.dispose();
+	renderTarget1.dispose();
+	renderTarget0 = new THREE.WebGLRenderTarget(width * pixelRatio, height * pixelRatio);
+	renderTarget1 = renderTarget0.clone();
 });
 
 // Start animation
 animate();
-
-// Add a clear function for user interaction
-function clearCanvas() {
-	renderer.clear();
-	composer.reset();
-}
 
 // Ensure proper transparency sorting
 renderer.sortObjects = true;
