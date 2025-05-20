@@ -6,6 +6,10 @@ import {AfterimagePass} from "three/examples/jsm/postprocessing/AfterimagePass";
 import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import vertexShader from "./shaders/vertex.glsl?raw";
 import fragmentShader from "./shaders/fragment.glsl?raw";
+import blurVertexShader from "./shaders/blurVertex.glsl?raw";
+import horizontalBlurShader from "./shaders/horizontalBlur.glsl?raw";
+import verticalBlurShader from "./shaders/verticalBlur.glsl?raw";
+import monochromeShader from "./shaders/monochrome.glsl?raw";
 
 // Scene setup
 const scene = new THREE.Scene();
@@ -31,6 +35,28 @@ const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 
+// Add horizontal blur pass
+const horizontalBlurPass = new ShaderPass({
+	uniforms: {
+		tDiffuse: {value: null},
+		h: {value: 3.0 / window.innerWidth},
+	},
+	vertexShader: blurVertexShader,
+	fragmentShader: horizontalBlurShader,
+});
+composer.addPass(horizontalBlurPass);
+
+// Add vertical blur pass
+const verticalBlurPass = new ShaderPass({
+	uniforms: {
+		tDiffuse: {value: null},
+		v: {value: 3.0 / window.innerHeight},
+	},
+	vertexShader: blurVertexShader,
+	fragmentShader: verticalBlurShader,
+});
+composer.addPass(verticalBlurPass);
+
 // Add AfterImagePass with strong effect
 const afterImagePass = new AfterimagePass(0.994); // Higher value = longer trails
 composer.addPass(afterImagePass);
@@ -41,13 +67,15 @@ const texture = textureLoader.load("texture2.png");
 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
 // Create custom shader material for cubes
-const cubeMaterial = new THREE.MeshBasicMaterial({
-	map: texture,
+const cubeMaterial = new THREE.ShaderMaterial({
+	uniforms: {
+		map: {value: texture},
+	},
+	vertexShader: blurVertexShader, // We can reuse this as it just passes UVs
+	fragmentShader: monochromeShader,
 	transparent: false,
-	opacity: 1,
-	blending: THREE.NormalBlending,
-	depthWrite: true, // Enable depth writing
-	depthTest: true, // Enable depth testing
+	depthWrite: true,
+	depthTest: true,
 });
 
 // Create cubes
@@ -156,6 +184,10 @@ window.addEventListener("resize", () => {
 
 	// Update composer size
 	composer.setSize(width, height);
+
+	// Update blur uniforms
+	horizontalBlurPass.uniforms.h.value = 1.0 / width;
+	verticalBlurPass.uniforms.v.value = 1.0 / height;
 });
 
 // Start animation
