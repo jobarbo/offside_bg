@@ -3,6 +3,7 @@ import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer";
 import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 import {ShaderPass} from "three/examples/jsm/postprocessing/ShaderPass";
 import {AfterimagePass} from "three/examples/jsm/postprocessing/AfterimagePass";
+import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import vertexShader from "./shaders/vertex.glsl?raw";
 import fragmentShader from "./shaders/fragment.glsl?raw";
 
@@ -14,6 +15,8 @@ const renderer = new THREE.WebGLRenderer({
 	alpha: true,
 	precision: "highp",
 });
+
+renderer.setClearColor(0x000000, 0); // Set clear color with 0 alpha for full transparency
 
 // Critical: Don't clear the renderer automatically
 renderer.autoClear = false;
@@ -29,27 +32,22 @@ const renderPass = new RenderPass(scene, camera);
 composer.addPass(renderPass);
 
 // Add AfterImagePass with strong effect
-const afterImagePass = new AfterimagePass(0.989); // Higher value = longer trails
+const afterImagePass = new AfterimagePass(0.994); // Higher value = longer trails
 composer.addPass(afterImagePass);
 
 // Load texture
 const textureLoader = new THREE.TextureLoader();
-const texture = textureLoader.load("texture.png");
+const texture = textureLoader.load("texture2.png");
 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
 // Create custom shader material for cubes
-const cubeMaterial = new THREE.ShaderMaterial({
-	vertexShader,
-	fragmentShader,
+const cubeMaterial = new THREE.MeshBasicMaterial({
+	map: texture,
 	transparent: false,
-	uniforms: {
-		uTexture: {value: texture},
-		uTime: {value: 0},
-	},
-	side: THREE.FrontSide,
-	depthWrite: true,
-	depthTest: true,
-	blending: THREE.NoBlending,
+	opacity: 1,
+	blending: THREE.NormalBlending,
+	depthWrite: true, // Enable depth writing
+	depthTest: true, // Enable depth testing
 });
 
 // Create cubes
@@ -57,71 +55,87 @@ const cubes = [];
 const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
 
 // Noise settings
-const noiseScale = 1.0;
-const timeScale = 0.002;
-const pathEvolutionScale = 0.01; // Speed at which paths evolve
+const noiseScale = 0.5;
+const timeScale = 0.001;
+const orbitRadius = 2.0;
+const orbitSpeed = 0.0015;
+const independentMotionScale = 2.0; // Scale of independent motion
+const centeringForce = 0.7; // How strongly cubes are pulled to their orbital paths
 let time = 0;
 
 // Create multiple cube instances
-for (let i = 0; i < 22; i++) {
+for (let i = 0; i < 122; i++) {
 	const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
-	// Random initial positions
-	cube.position.x = (Math.random() - 0.5) * 10;
-	cube.position.y = (Math.random() - 0.5) * 10;
-	cube.position.z = (Math.random() - 0.5) * 10;
+	// Set initial positions in a circular pattern
+	const angle = (i / 22) * Math.PI * 2;
+	const radius = orbitRadius + (Math.random() - 0.5);
+	cube.position.x = Math.cos(angle) * radius;
+	cube.position.y = Math.sin(angle) * radius;
+	cube.position.z = (Math.random() - 0.5) * 12;
 
-	// Store original positions for noise movement
-	cube.userData.originalPosition = cube.position.clone();
-	cube.userData.offset = Math.random() * 1000; // Random offset for varied movement
+	// Store original angle for orbital motion
+	cube.userData.originalAngle = angle;
+	cube.userData.radius = radius;
+	cube.userData.offset = Math.random() * 1000;
+	cube.userData.verticalOffset = Math.random() * Math.PI * 2; // Phase offset for vertical motion
 
 	scene.add(cube);
 	cubes.push(cube);
 }
 
 // Position camera
-camera.position.z = 15;
+camera.position.z = 13;
+camera.position.x = 0;
+camera.position.y = 0;
 
 // Noise function (Improved Perlin noise)
 function noise(x, y, z) {
 	const nx = Math.cos(x);
-	const ny = Math.cos(y);
+	const ny = Math.sin(y);
 	const nz = Math.cos(z);
-	return Math.cos(nx + ny + nz) * 0.5;
+	return Math.cos(nx + ny + nz) * 0.15;
 }
 
 // Animation loop
 function animate() {
 	requestAnimationFrame(animate);
-	time += 1;
+	time += 1.0;
 
-	// Update shader uniforms
-	cubeMaterial.uniforms.uTime.value = time * timeScale;
+	// Calculate shared rotation for all cubes
+	const sharedNoiseX = noise(time * timeScale, 0, 0) * noiseScale;
+	const sharedNoiseY = noise(0, time * timeScale, 0) * noiseScale;
+	const sharedNoiseZ = noise(0, 0, time * timeScale) * noiseScale;
+
+	const sharedRotationX = sharedNoiseX * Math.PI;
+	const sharedRotationY = sharedNoiseY * Math.PI;
+	const sharedRotationZ = sharedNoiseZ * Math.PI;
 
 	// Update cubes
 	cubes.forEach((cube, index) => {
 		const offset = cube.userData.offset;
-		const originalPos = cube.userData.originalPosition;
+		const baseAngle = cube.userData.originalAngle;
+		const radius = cube.userData.radius;
 
-		// Add slow evolution to the base position
-		const evolutionX = noise(time * pathEvolutionScale, offset, 0) * 5;
-		const evolutionY = noise(offset, time * pathEvolutionScale, 0) * 5;
-		const evolutionZ = noise(0, offset, time * pathEvolutionScale) * 5;
+		// Calculate orbital position (base position)
+		const currentAngle = baseAngle + time * orbitSpeed;
+		const baseX = Math.cos(currentAngle) * radius;
+		const baseY = Math.sin(currentAngle) * radius;
 
-		// Generate primary movement noise
-		const noiseX = noise(time * timeScale + offset, evolutionY, evolutionZ) * noiseScale;
-		const noiseY = noise(evolutionX, time * timeScale + offset, evolutionZ) * noiseScale;
-		const noiseZ = noise(evolutionX, evolutionY, time * timeScale + offset) * noiseScale;
+		// Calculate independent motions
+		const independentX = noise(time * timeScale + offset, 0, offset) * independentMotionScale;
+		const independentY = noise(0, time * timeScale + offset, offset) * independentMotionScale;
+		const independentZ = noise(offset, time * timeScale, cube.userData.verticalOffset) * 111.5;
 
-		// Apply both evolution and noise to position
-		cube.position.x = originalPos.x + noiseX * 1 + evolutionX;
-		cube.position.y = originalPos.y + noiseY * 1 + evolutionY;
-		cube.position.z = originalPos.z + noiseZ * 15 + evolutionZ;
+		// Blend between orbital position and independent motion
+		cube.position.x = baseX * centeringForce + independentX;
+		cube.position.y = baseY * centeringForce + independentY;
+		cube.position.z = independentZ;
 
-		// Add evolution to rotation as well
-		cube.rotation.x = noiseX * Math.PI + time * pathEvolutionScale * 0.1;
-		cube.rotation.y = noiseY * Math.PI + time * pathEvolutionScale * 0.1;
-		cube.rotation.z = noiseZ * Math.PI + time * pathEvolutionScale * 0.1;
+		// Apply shared rotation to all cubes
+		cube.rotation.x = sharedRotationX + noise(time * timeScale, offset, 0) * Math.PI;
+		cube.rotation.y = sharedRotationY + noise(offset, time * timeScale, 0) * Math.PI;
+		cube.rotation.z = sharedRotationZ + noise(0, offset, time * timeScale) * Math.PI;
 	});
 
 	// Render with composer
@@ -152,3 +166,7 @@ function clearCanvas() {
 	renderer.clear();
 	composer.reset();
 }
+
+// Ensure proper transparency sorting
+renderer.sortObjects = true;
+renderer.setClearColor(0x000000, 0);
