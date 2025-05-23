@@ -1,7 +1,7 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
 import animatedTextureShader from "./shaders/animatedTexture.glsl?raw";
 import blurVertexShader from "./shaders/blurVertex.glsl?raw";
-import textureUrl from "../texture2.png";
+import textureUrl from "../texture6.png";
 
 // Scene setup
 const scene = new THREE.Scene();
