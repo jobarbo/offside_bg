@@ -2,6 +2,35 @@ uniform sampler2D map;
 uniform float time;
 varying vec2 vUv;
 
+// Gaussian blur parameters
+const float blurRadius = 3.0;
+const float blurSigma = 1.0;
+const int samples = 9; // Number of samples in each direction
+
+vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 resolution) {
+    vec4 color = vec4(0.0);
+    float total = 0.0;
+
+    // Calculate pixel size
+    vec2 pixel = vec2(1.0) / resolution;
+
+    // Two-pass Gaussian blur
+    for(int x = -samples/2; x <= samples/2; x++) {
+        for(int y = -samples/2; y <= samples/2; y++) {
+            vec2 offset = vec2(float(x), float(y)) * pixel * blurRadius;
+
+            // Calculate Gaussian weight
+            float distance = length(offset);
+            float weight = exp(-(distance * distance) / (2.0 * blurSigma * blurSigma));
+
+            color += texture2D(tex, uv + offset) * weight;
+            total += weight;
+        }
+    }
+
+    return color / total;
+}
+
 void main() {
     // Create animated UV coordinates
     vec2 animatedUv = vUv;
@@ -20,15 +49,16 @@ void main() {
     );
     rotatedUv += center;
 
-    // Sample texture with animated coordinates
-    vec4 texel = texture2D(map, rotatedUv);
+    // Apply Gaussian blur to the rotated and animated texture
+    vec4 texel = gaussianBlur(map, rotatedUv, vec2(512.0, 512.0)); // Assuming texture size is 512x512
 
     // Convert to monochrome using standard luminance conversion
     float luminance = dot(texel.rgb, vec3(0.299, 0.587, 0.514));
     texel.rgb = vec3(luminance);
 
-    // Add pulsing effect
-
+    // Add subtle glow effect
+    float glow = 1.2 + sin(time) * 0.2;
+    texel.rgb *= glow;
 
     gl_FragColor = texel;
 }
