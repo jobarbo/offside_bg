@@ -38,9 +38,9 @@ const fullscreenQuadMaterial = new THREE.ShaderMaterial({
 		aspect: {value: window.innerWidth / window.innerHeight},
 		mousePos: {value: new THREE.Vector2(0, 0)},
 		noiseFactor: {value: 2.2}, // Controls noise frequency
-		noiseScale: {value: 0.002}, // Controls noise amplitude
+		noiseScale: {value: 0.001}, // Controls noise amplitude
 		rgbPersistFactor: {value: 1.0}, // Controls color persistence (higher = longer trails)
-		alphaPersistFactor: {value: 1.999}, // Controls opacity persistence
+		alphaPersistFactor: {value: 1.0}, // Controls opacity persistence
 	},
 	vertexShader: baseVertexShader,
 	fragmentShader: persistenceFragmentShader,
