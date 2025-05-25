@@ -68,12 +68,13 @@ const cubeMaterial = new THREE.ShaderMaterial({
 	uniforms: {
 		map: {value: texture},
 		time: {value: 0.1},
+		opacity: {value: 1.0},
 	},
 	vertexShader: blurVertexShader,
 	fragmentShader: animatedTextureShader,
-	transparent: false,
-	depthWrite: true,
-	depthTest: true,
+	transparent: true,
+	depthWrite: false,
+	depthTest: false,
 });
 
 // Create cubes
@@ -130,7 +131,10 @@ function animate() {
 
 	// Update shader time uniforms
 	cubeMaterial.uniforms.time.value = time * 0.01;
-	fullscreenQuadMaterial.uniforms.time.value = time * 0.01;
+	fullscreenQuadMaterial.uniforms.time.value = time * 0.0001;
+
+	// Example of how to change opacity (you can modify this value as needed)
+	cubeMaterial.uniforms.opacity.value = 0.05; // Change this value to whatever opacity you want (0.0 to 1.0)
 
 	// Update mouse position with smooth interpolation
 	const mouseSpeed = 0.05;
