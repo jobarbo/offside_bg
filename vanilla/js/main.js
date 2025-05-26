@@ -2,15 +2,15 @@ import * as THREE from "three";
 
 // Load shaders
 const shaders = Promise.all([
-	fetch("../vanilla/shaders/animatedTexture.glsl").then((res) => res.text()),
-	fetch("../vanilla/shaders/blurVertex.glsl").then((res) => res.text()),
-	fetch("../vanilla/shaders/baseVertex.glsl").then((res) => res.text()),
-	fetch("../vanilla/shaders/persistenceFragment.glsl").then((res) => res.text()),
+	fetch("../shaders/animatedTexture.glsl").then((res) => res.text()),
+	fetch("../shaders/blurVertex.glsl").then((res) => res.text()),
+	fetch("../shaders/baseVertex.glsl").then((res) => res.text()),
+	fetch("../shaders/persistenceFragment.glsl").then((res) => res.text()),
 ]);
 
 const [animatedTextureShader, blurVertexShader, baseVertexShader, persistenceFragmentShader] = await shaders;
 
-const textureUrl = "../texture6.png";
+const textureUrl = "../../texture6.png";
 
 // Scene setup
 const scene = new THREE.Scene();
