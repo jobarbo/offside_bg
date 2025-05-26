@@ -134,7 +134,7 @@ function animate() {
 	fullscreenQuadMaterial.uniforms.time.value = time * 0.0001;
 
 	// Example of how to change opacity (you can modify this value as needed)
-	cubeMaterial.uniforms.opacity.value = 0.23; // Change this value to whatever opacity you want (0.0 to 1.0)
+	cubeMaterial.uniforms.opacity.value = 0.13; // Change this value to whatever opacity you want (0.0 to 1.0)
 
 	// Update mouse position with smooth interpolation
 	const mouseSpeed = 0.5;
