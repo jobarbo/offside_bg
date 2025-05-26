@@ -40,8 +40,8 @@ void main() {
     vec2 animatedUv = vUv;
 
     // Add wave-like distortion
-    animatedUv.x += sin(vUv.y * 12.0 + time * 2.0) * 0.1;
-    animatedUv.y += cos(vUv.x * 12.0 + time * 2.0) * 0.1;
+    animatedUv.x += sin(vUv.y * 12.0 + time * 0.5) * 0.1;
+    animatedUv.y += cos(vUv.x * 12.0 + time * 0.5) * 0.1;
 
     // Add rotating motion
     float angle = time * 0.05;
@@ -60,10 +60,10 @@ void main() {
     float luminance = dot(texel.rgb, vec3(0.299, 0.587, 0.514));
 
     // Add contrast adjustment
-    float contrast = 2.5; // Increase this value for more contrast
-    float midpoint = 0.25;
+    float contrast = 1.5; // Increase this value for more contrast
+    float midpoint = 0.7;
     luminance = (luminance - midpoint) * contrast + midpoint;
-    luminance = clamp(luminance, 0.0, 2.0); // Ensure values stay in valid range
+    luminance = clamp(luminance, 0.0, 1.0); // Ensure values stay in valid range
 
     texel.rgb = vec3(luminance);
 

@@ -127,7 +127,7 @@ function noise(x, y, z) {
 // Animation loop
 function animate() {
 	requestAnimationFrame(animate);
-	time += 1.0;
+	time += 3.5;
 
 	// Update shader time uniforms
 	cubeMaterial.uniforms.time.value = time * 0.01;
