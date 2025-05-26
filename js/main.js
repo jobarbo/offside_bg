@@ -1,6 +1,6 @@
-import * as THREE from "three";
+// Remove the import and use global THREE object
 
-export class CubeAnimation {
+class CubeAnimation {
 	constructor(container, options = {}) {
 		this.container = container;
 		this.options = {
