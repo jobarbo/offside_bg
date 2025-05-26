@@ -9,7 +9,6 @@ export class CubeAnimation {
 			width: options.width || container.clientWidth,
 			height: options.height || container.clientHeight,
 			numCubes: options.numCubes || 25,
-			enableDeviceOrientation: options.enableDeviceOrientation !== false,
 			...options,
 		};
 
@@ -157,18 +156,6 @@ export class CubeAnimation {
 			this.targetMousePos[1] = -(e.clientY / this.options.height) * 2 + 1;
 		});
 
-		if (this.options.enableDeviceOrientation) {
-			this.container.addEventListener(
-				"touchstart",
-				() => {
-					if (!this.isUsingDeviceOrientation) {
-						this.enableDeviceOrientation();
-					}
-				},
-				{once: true}
-			);
-		}
-
 		window.addEventListener("resize", () => {
 			this.handleResize();
 		});
@@ -187,7 +174,7 @@ export class CubeAnimation {
 		requestAnimationFrame(this.animate.bind(this));
 		this.time += 3.5;
 
-		if (this.controls && this.isUsingDeviceOrientation) {
+		if (this.controls) {
 			this.controls.update();
 		}
 
@@ -321,9 +308,6 @@ export class CubeAnimation {
 		// Cleanup
 		window.removeEventListener("resize", this.handleResize);
 		this.container.removeEventListener("mousemove", this.handleMouseMove);
-		if (this.options.enableDeviceOrientation) {
-			this.container.removeEventListener("touchstart", this.handleTouchStart);
-		}
 
 		// Dispose of Three.js objects
 		this.scene.traverse((object) => {
@@ -343,5 +327,38 @@ export class CubeAnimation {
 	}
 }
 
-// Export the class
+// Auto-initialize animations for elements with data-background-animation
+function initBackgroundAnimations() {
+	const elements = document.querySelectorAll("[data-background-animation]");
+
+	elements.forEach((element) => {
+		// Get options from data attributes
+		const options = {
+			shadersPath: element.dataset.shadersPath || "./shaders",
+			texturePath: element.dataset.texturePath || "./textures/texture6.png",
+			numCubes: parseInt(element.dataset.numCubes || "25", 10),
+		};
+
+		// Create animation instance
+		const animation = new CubeAnimation(element, options);
+
+		// Store animation instance on the element for future reference
+		element._cubeAnimation = animation;
+
+		// Clean up on page unload
+		window.addEventListener("unload", () => {
+			animation.destroy();
+		});
+	});
+}
+
+// Auto-initialize when the DOM is ready
+if (document.readyState === "loading") {
+	document.addEventListener("DOMContentLoaded", initBackgroundAnimations);
+} else {
+	initBackgroundAnimations();
+}
+
+// Export both the class and initialization function
 export default CubeAnimation;
+export {initBackgroundAnimations};

@@ -52,7 +52,7 @@
 	</head>
 	<body>
 		<!-- Background container for the animation -->
-		<div id="background-container"></div>
+		<div id="background-container" data-background-animation data-shaders-path="./shaders" data-texture-path="./textures/texture6.png" data-num-cubes="25" data-enable-device-orientation="true"></div>
 
 		<!-- Main content -->
 		<div class="content">
@@ -71,31 +71,12 @@
 		<script type="importmap">
 			{
 				"imports": {
-					"three": "https://unpkg.com/three@0.176.0/build/three.module.js",
-					"three/addons/": "https://unpkg.com/three@0.176.0/examples/jsm/"
+					"three": "https://unpkg.com/three@0.176.0/build/three.module.js"
 				}
 			}
 		</script>
 
 		<!-- Initialize animation -->
-		<script type="module">
-			import CubeAnimation from "./js/main.js";
-
-			// Get the background container
-			const container = document.querySelector("#background-container");
-
-			// Initialize the animation with custom options
-			const animation = new CubeAnimation(container, {
-				shadersPath: "./shaders",
-				texturePath: "./textures/texture6.png",
-				numCubes: 25,
-				enableDeviceOrientation: true,
-			});
-
-			// Clean up on page unload
-			window.addEventListener("unload", () => {
-				animation.destroy();
-			});
-		</script>
+		<script type="module" src="./js/main.js"></script>
 	</body>
 </html>
