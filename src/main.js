@@ -1,14 +1,7 @@
 import * as THREE from "../node_modules/three/build/three.module.js";
-import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer";
-import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
-import {ShaderPass} from "three/examples/jsm/postprocessing/ShaderPass";
-import {AfterimagePass} from "three/examples/jsm/postprocessing/AfterimagePass";
-import {UnrealBloomPass} from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import animatedTextureShader from "./shaders/animatedTexture.glsl?raw";
 import blurVertexShader from "./shaders/blurVertex.glsl?raw";
 import baseVertexShader from "./shaders/baseVertex.glsl?raw";
-import horizontalBlurShader from "./shaders/horizontalBlur.glsl?raw";
-import verticalBlurShader from "./shaders/verticalBlur.glsl?raw";
 import persistenceFragmentShader from "./shaders/persistenceFragment.glsl?raw";
 import textureUrl from "../texture6.png";
 
@@ -41,11 +34,11 @@ const fullscreenQuadGeometry = new THREE.PlaneGeometry(window.innerWidth, window
 const fullscreenQuadMaterial = new THREE.ShaderMaterial({
 	uniforms: {
 		sampler: {value: null},
-		time: {value: 1},
+		time: {value: 0},
 		aspect: {value: window.innerWidth / window.innerHeight},
 		mousePos: {value: new THREE.Vector2(0, 0)},
 		noiseFactor: {value: 2.2}, // Controls noise frequency
-		noiseScale: {value: 0.5}, // Controls noise amplitude
+		noiseScale: {value: 0.001}, // Controls noise amplitude
 		rgbPersistFactor: {value: 1.0}, // Controls color persistence (higher = longer trails)
 		alphaPersistFactor: {value: 1.0}, // Controls opacity persistence
 	},
@@ -131,33 +124,6 @@ function noise(x, y, z) {
 	return Math.cos(nx + ny + nz) * 0.1;
 }
 
-// Setup EffectComposer
-const composer = new EffectComposer(renderer);
-const renderPass = new RenderPass(scene, camera);
-composer.addPass(renderPass);
-
-// Add horizontal blur pass
-const horizontalBlurPass = new ShaderPass({
-	uniforms: {
-		tDiffuse: {value: null},
-		h: {value: 1.0 / window.innerWidth},
-	},
-	vertexShader: blurVertexShader,
-	fragmentShader: horizontalBlurShader,
-});
-composer.addPass(horizontalBlurPass);
-
-// Add vertical blur pass
-const verticalBlurPass = new ShaderPass({
-	uniforms: {
-		tDiffuse: {value: null},
-		v: {value: 1.0 / window.innerHeight},
-	},
-	vertexShader: blurVertexShader,
-	fragmentShader: verticalBlurShader,
-});
-composer.addPass(verticalBlurPass);
-
 // Animation loop
 function animate() {
 	requestAnimationFrame(animate);
@@ -199,7 +165,7 @@ function animate() {
 		// Calculate independent motions
 		const independentX = noise(time * timeScale + offset, 0, offset) * independentMotionScale;
 		const independentY = noise(0, time * timeScale + offset, offset) * independentMotionScale;
-		const independentZ = noise(offset, time * timeScale, cube.userData.verticalOffset) * 109.5;
+		const independentZ = noise(offset, time * timeScale, cube.userData.verticalOffset) * 111.5;
 
 		// Blend between orbital position and independent motion
 		cube.position.x = baseX + independentX;
@@ -254,8 +220,6 @@ function animate() {
 	const temp = renderTarget0;
 	renderTarget0 = renderTarget1;
 	renderTarget1 = temp;
-
-	composer.render();
 }
 
 // Handle window resize
