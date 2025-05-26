@@ -6,7 +6,7 @@ varying vec2 vUv;
 // Gaussian blur parameters
 const float blurRadius = 3.0;
 const float blurSigma = 1.0;
-const int samples = 19; // Number of samples in each direction
+const int samples = 6; // Number of samples in each direction
 
 vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 resolution) {
     vec4 color = vec4(0.0);
@@ -63,10 +63,6 @@ void main() {
     luminance = clamp(luminance, 0.0, 2.0); // Ensure values stay in valid range
 
     texel.rgb = vec3(luminance);
-
-    // Add subtle glow effect
-    float glow = 1.2 + sin(time) * 0.2;
-    texel.rgb *= glow;
 
     // Apply opacity
     gl_FragColor = vec4(texel.rgb, texel.a * opacity);

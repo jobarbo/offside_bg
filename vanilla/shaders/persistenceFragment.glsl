@@ -84,7 +84,7 @@ float snoise3(vec3 v) {
 void main() {
   float a = snoise3(vec3(v_uv * noiseFactor, time * 0.1)) * noiseScale;
   float b = snoise3(vec3(v_uv * noiseFactor, time * 0.1 + 100.0)) * noiseScale;
-  vec4 t0 = texture2D(sampler, v_uv + vec2(a, b) + mousePos * 0.005);
+  vec4 t0 = texture2D(sampler, v_uv + vec2(a, b) + mousePos * 0.001);
 
   gl_FragColor = vec4(t0.xyz * rgbPersistFactor, alphaPersistFactor);
 }
