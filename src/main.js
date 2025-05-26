@@ -37,8 +37,8 @@ const fullscreenQuadMaterial = new THREE.ShaderMaterial({
 		time: {value: 0},
 		aspect: {value: window.innerWidth / window.innerHeight},
 		mousePos: {value: new THREE.Vector2(0, 0)},
-		noiseFactor: {value: 2.2}, // Controls noise frequency
-		noiseScale: {value: 0.001}, // Controls noise amplitude
+		noiseFactor: {value: 3.2}, // Controls noise frequency
+		noiseScale: {value: 0.004}, // Controls noise amplitude
 		rgbPersistFactor: {value: 1.0}, // Controls color persistence (higher = longer trails)
 		alphaPersistFactor: {value: 1.0}, // Controls opacity persistence
 	},
@@ -91,12 +91,12 @@ const centeringForce = 0.7; // How strongly cubes are pulled to their orbital pa
 let time = 0;
 
 // Create multiple cube instances
-for (let i = 0; i < 40; i++) {
+for (let i = 0; i < 25; i++) {
 	const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 
 	// Set initial positions in a circular pattern
-	const angle = (i / 40) * Math.PI * 2;
-	const radius = orbitRadius + (Math.random() - 0.5) * 0.1;
+	const angle = (i / 25) * Math.PI * 2;
+	const radius = orbitRadius + (Math.random() - 0.5) * 0.01;
 	cube.position.x = (Math.random() - 0.5) * 1;
 	cube.position.y = (Math.random() - 0.5) * 1;
 	cube.position.z = (Math.random() - 0.5) * 1;
@@ -134,10 +134,10 @@ function animate() {
 	fullscreenQuadMaterial.uniforms.time.value = time * 0.0001;
 
 	// Example of how to change opacity (you can modify this value as needed)
-	cubeMaterial.uniforms.opacity.value = 0.05; // Change this value to whatever opacity you want (0.0 to 1.0)
+	cubeMaterial.uniforms.opacity.value = 0.23; // Change this value to whatever opacity you want (0.0 to 1.0)
 
 	// Update mouse position with smooth interpolation
-	const mouseSpeed = 0.05;
+	const mouseSpeed = 0.5;
 	mousePos[0] += (targetMousePos[0] - mousePos[0]) * mouseSpeed;
 	mousePos[1] += (targetMousePos[1] - mousePos[1]) * mouseSpeed;
 	fullscreenQuadMaterial.uniforms.mousePos.value.set(mousePos[0], mousePos[1]);

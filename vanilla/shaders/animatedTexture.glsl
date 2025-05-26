@@ -6,30 +6,33 @@ varying vec2 vUv;
 // Gaussian blur parameters
 const float blurRadius = 3.0;
 const float blurSigma = 1.0;
-const int samples = 6; // Number of samples in each direction
+const int samples = 16; // Number of samples for each pass
 
-vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 resolution) {
+vec4 gaussianBlur1D(sampler2D tex, vec2 uv, vec2 resolution, vec2 direction) {
     vec4 color = vec4(0.0);
     float total = 0.0;
-
-    // Calculate pixel size
     vec2 pixel = vec2(1.0) / resolution;
 
-    // Two-pass Gaussian blur
-    for(int x = -samples/2; x <= samples/2; x++) {
-        for(int y = -samples/2; y <= samples/2; y++) {
-            vec2 offset = vec2(float(x), float(y)) * pixel * blurRadius;
+    // Single-pass (either horizontal or vertical)
+    for(int i = -samples/2; i <= samples/2; i++) {
+        vec2 offset = direction * float(i) * pixel * blurRadius;
 
-            // Calculate Gaussian weight
-            float distance = length(offset);
-            float weight = exp(-(distance * distance) / (2.0 * blurSigma * blurSigma));
+        // Calculate Gaussian weight
+        float distance = length(offset);
+        float weight = exp(-(distance * distance) / (2.0 * blurSigma * blurSigma));
 
-            color += texture2D(tex, uv + offset) * weight;
-            total += weight;
-        }
+        color += texture2D(tex, uv + offset) * weight;
+        total += weight;
     }
 
     return color / total;
+}
+
+vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 resolution) {
+    // First pass - horizontal
+    vec4 hBlur = gaussianBlur1D(tex, uv, resolution, vec2(1.0, 0.0));
+    // Second pass - vertical
+    return gaussianBlur1D(tex, uv, resolution, vec2(0.0, 1.0));
 }
 
 void main() {
@@ -37,8 +40,8 @@ void main() {
     vec2 animatedUv = vUv;
 
     // Add wave-like distortion
-    animatedUv.x += sin(vUv.y * 12.0 + time * 2.0) * 0.02;
-    animatedUv.y += cos(vUv.x * 12.0 + time * 2.0) * 0.02;
+    animatedUv.x += sin(vUv.y * 12.0 + time * 2.0) * 0.1;
+    animatedUv.y += cos(vUv.x * 12.0 + time * 2.0) * 0.1;
 
     // Add rotating motion
     float angle = time * 0.05;
