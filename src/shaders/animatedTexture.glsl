@@ -6,7 +6,7 @@ varying vec2 vUv;
 // Gaussian blur parameters
 const float blurRadius = 3.0;
 const float blurSigma = 1.0;
-const int samples = 6; // Number of samples in each direction
+const int samples = 1; // Number of samples in each direction
 
 vec4 gaussianBlur(sampler2D tex, vec2 uv, vec2 resolution) {
     vec4 color = vec4(0.0);
