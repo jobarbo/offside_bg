@@ -1,4 +1,5 @@
 // Remove the import and use global THREE object
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js";
 
 class CubeAnimation {
 	constructor(container, options = {}) {
@@ -346,7 +347,7 @@ function initBackgroundAnimations() {
 		element._cubeAnimation = animation;
 
 		// Clean up on page unload
-		window.addEventListener("unload", () => {
+		window.addEventListener("beforeunload", () => {
 			animation.destroy();
 		});
 	});
@@ -358,7 +359,3 @@ if (document.readyState === "loading") {
 } else {
 	initBackgroundAnimations();
 }
-
-// Export both the class and initialization function
-export default CubeAnimation;
-export {initBackgroundAnimations};
