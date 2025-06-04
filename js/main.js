@@ -16,6 +16,7 @@ class CubeAnimation {
 		this.isScrolling = false;
 		this.scrollTimeout = null;
 		this.animationFrameId = null;
+		this.hasStartedRendering = false;
 		this.isSafariMobile = this.checkSafariMobile();
 		this.init();
 	}
@@ -194,6 +195,7 @@ class CubeAnimation {
 					// Set a new timeout to resume animation after scrolling stops
 					this.scrollTimeout = setTimeout(() => {
 						this.isScrolling = false;
+						// Resume animation without clearing render targets
 						this.animate();
 					}, 150); // 150ms debounce
 				},
@@ -281,7 +283,11 @@ class CubeAnimation {
 
 		// 3. Render to renderTarget0
 		this.renderer.setRenderTarget(this.renderTarget0);
-		this.renderer.clear(); // Clear once at the beginning
+		// Only clear if this is the first frame, otherwise preserve trails
+		if (!this.hasStartedRendering) {
+			this.renderer.clear();
+			this.hasStartedRendering = true;
+		}
 
 		// 4. Render the persistence effect (this will create the trails using the previous frame)
 		this.renderer.render(this.persistenceScene, this.orthoCamera);
