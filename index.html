@@ -35,6 +35,11 @@
 				margin-bottom: 1rem;
 			}
 
+			h2 {
+				font-size: 2.5rem;
+				margin: 2rem 0 1rem;
+			}
+
 			p {
 				font-size: 1.2rem;
 				line-height: 1.6;
@@ -49,6 +54,13 @@
 				padding: 2rem;
 				margin: 2rem 0;
 			}
+
+			.section {
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+			}
 		</style>
 	</head>
 	<body>
@@ -57,14 +69,48 @@
 
 		<!-- Main content -->
 		<div class="content">
-			<h1>Welcome to Our Website</h1>
-			<div class="glass">
-				<p>
-					This is a demonstration of how the Three.js Cube Animation can be used as a background for a real website. The animation is running behind this content, creating an engaging visual
-					experience without interfering with the main content.
-				</p>
-				<p>Notice how the cubes react to your mouse movement and device orientation (on mobile devices). The glass effect on this panel helps create depth while maintaining readability.</p>
-			</div>
+			<section class="section">
+				<h1>Welcome to Our Website</h1>
+				<div class="glass">
+					<p>
+						This is a demonstration of how the Three.js Cube Animation can be used as a background for a real website. The animation is running behind this content, creating an engaging visual
+						experience without interfering with the main content.
+					</p>
+					<p>Notice how the cubes react to your mouse movement and device orientation (on mobile devices). The glass effect on this panel helps create depth while maintaining readability.</p>
+				</div>
+			</section>
+
+			<section class="section">
+				<h2>Interactive Features</h2>
+				<div class="glass">
+					<p>The background animation features a dynamic cube system that responds to user interaction. Each cube moves independently while maintaining a cohesive visual pattern.</p>
+					<p>On mobile devices, the animation responds to device orientation, creating an immersive experience that changes as you move your device.</p>
+				</div>
+			</section>
+
+			<section class="section">
+				<h2>Performance Optimized</h2>
+				<div class="glass">
+					<p>This implementation includes optimizations for mobile devices, including scroll performance improvements and efficient resource management.</p>
+					<p>The animation automatically adjusts its quality based on device capabilities, ensuring smooth performance across different devices.</p>
+				</div>
+			</section>
+
+			<section class="section">
+				<h2>Customizable Design</h2>
+				<div class="glass">
+					<p>The background can be easily customized through various parameters, including the number of cubes, animation speed, and visual effects.</p>
+					<p>Try scrolling through this page to see how the animation behaves during user interaction.</p>
+				</div>
+			</section>
+
+			<section class="section">
+				<h2>Responsive Layout</h2>
+				<div class="glass">
+					<p>The layout adapts seamlessly to different screen sizes, maintaining readability and visual appeal across devices.</p>
+					<p>The glass effect panels provide a modern, clean look while ensuring content remains accessible.</p>
+				</div>
+			</section>
 		</div>
 
 		<!-- Initialize animation -->
