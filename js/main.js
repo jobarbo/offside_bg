@@ -13,20 +13,7 @@ class CubeAnimation {
 			...options,
 		};
 
-		this.isScrolling = false;
-		this.scrollTimeout = null;
-		this.animationFrameId = null;
-		this.hasStartedRendering = false;
-		this.isSafariMobile = this.checkSafariMobile();
 		this.init();
-	}
-
-	checkSafariMobile() {
-		const ua = window.navigator.userAgent;
-		const iOS = !!ua.match(/iPad/i) || !!ua.match(/iPhone/i);
-		const webkit = !!ua.match(/WebKit/i);
-		const iOSSafari = iOS && webkit && !ua.match(/CriOS/i);
-		return iOSSafari;
 	}
 
 	async init() {
@@ -173,35 +160,6 @@ class CubeAnimation {
 		window.addEventListener("resize", () => {
 			this.handleResize();
 		});
-
-		// Only add scroll handling for Safari mobile
-		if (this.isSafariMobile) {
-			window.addEventListener(
-				"scroll",
-				() => {
-					if (!this.isScrolling) {
-						this.isScrolling = true;
-						// Pause animation during scroll
-						if (this.animationFrameId) {
-							cancelAnimationFrame(this.animationFrameId);
-						}
-					}
-
-					// Clear existing timeout
-					if (this.scrollTimeout) {
-						clearTimeout(this.scrollTimeout);
-					}
-
-					// Set a new timeout to resume animation after scrolling stops
-					this.scrollTimeout = setTimeout(() => {
-						this.isScrolling = false;
-						// Resume animation without clearing render targets
-						this.animate();
-					}, 150); // 150ms debounce
-				},
-				{passive: true}
-			);
-		}
 	}
 
 	// Noise function (Improved Perlin noise)
@@ -214,10 +172,7 @@ class CubeAnimation {
 
 	// Animation loop
 	animate() {
-		// Only check for scrolling on Safari mobile
-		if (this.isSafariMobile && this.isScrolling) return;
-
-		this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
+		requestAnimationFrame(this.animate.bind(this));
 		this.time += 3.5;
 
 		if (this.controls) {
@@ -283,11 +238,7 @@ class CubeAnimation {
 
 		// 3. Render to renderTarget0
 		this.renderer.setRenderTarget(this.renderTarget0);
-		// Only clear if this is the first frame, otherwise preserve trails
-		if (!this.hasStartedRendering) {
-			this.renderer.clear();
-			this.hasStartedRendering = true;
-		}
+		this.renderer.clear(); // Clear once at the beginning
 
 		// 4. Render the persistence effect (this will create the trails using the previous frame)
 		this.renderer.render(this.persistenceScene, this.orthoCamera);
@@ -357,20 +308,7 @@ class CubeAnimation {
 	destroy() {
 		// Cleanup
 		window.removeEventListener("resize", this.handleResize);
-		if (this.isSafariMobile) {
-			window.removeEventListener("scroll", this.handleScroll);
-		}
 		this.container.removeEventListener("mousemove", this.handleMouseMove);
-
-		// Cancel any pending animation frame
-		if (this.animationFrameId) {
-			cancelAnimationFrame(this.animationFrameId);
-		}
-
-		// Clear any pending scroll timeout
-		if (this.scrollTimeout) {
-			clearTimeout(this.scrollTimeout);
-		}
 
 		// Dispose of Three.js objects
 		this.scene.traverse((object) => {
